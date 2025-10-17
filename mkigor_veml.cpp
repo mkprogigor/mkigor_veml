@@ -143,7 +143,7 @@ void cl_VEML7700::wakeUp() {
  * @brief read raw data from sensor and calc it to LUX value
  * @details	ALS and WHITE raw data need to be actual, after call fn wakeUp(),
  * 			should to do delay > 800 ms,
- * @return structure LW_stru_t { (uint32_t)Lux ALS, (uint32_t)Lux WHITE } = ALS & WHATI values in lux 
+ * @return structure AW_stru_t { (uint32_t)Lux ALS, (uint32_t)Lux WHITE } = ALS & WHATI values in lux 
  */
 AW_stru_t cl_VEML7700::readAW() {
 	/// Constant vars
@@ -206,11 +206,11 @@ AW_stru_t cl_VEML7700::readAW() {
 	lv_ALSdata = readReg(cd_ALS);
 	lv_WHITEda = readReg(cd_WHITE);
 	float lv_coef = lvc_tableResol[lv_gainIndex][lv_timeIndex];
-	lv_AW.lux1 = (uint32_t)( round(lv_coef * (float)lv_ALSdata) );
+	lv_AW.als1 = (uint32_t)( round(lv_coef * (float)lv_ALSdata) );
 	lv_AW.whi1 = (uint32_t)( round(lv_coef * (float)lv_WHITEda) );
 #ifdef DEBUG_EN
 	printf("vars -> ALS=%d, WHITE=%d, gainIdx=%d, timeIdx=%d, coef=%f, LUX=%d, WHITE=%d\n\n",
-		lv_ALSdata, lv_WHITEda, lv_gainIndex, lv_timeIndex, lv_coef, lv_AW.lux1, lv_AW.whi1);
+		lv_ALSdata, lv_WHITEda, lv_gainIndex, lv_timeIndex, lv_coef, lv_AW.als1, lv_AW.whi1);
 #endif
 	return lv_AW;
 }

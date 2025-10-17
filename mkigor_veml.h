@@ -36,7 +36,7 @@
 #define DEBUG_EN
 
 struct AW_stru_t	{
-	uint32_t lux1;
+	uint32_t als1;
 	uint32_t whi1;
 };
 
@@ -88,7 +88,7 @@ void wakeUp();
  * @brief read raw data from sensor and calc it to LUX value
  * @details	ALS and WHITE raw data need to be actual, after call fn wakeUp(),
  * 			should to do delay > 800 ms,
- * @return structure LW_stru_t { (uint32_t)Lux ALS, (uint32_t)Lux WHITE } = ALS & WHATI values in lux 
+ * @return structure AW_stru_t { (uint32_t)Lux ALS, (uint32_t)Lux WHITE } = ALS & WHATI values in lux 
  */
 AW_stru_t readAW();
 
