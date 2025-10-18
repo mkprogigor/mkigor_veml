@@ -39,7 +39,7 @@
 #define cd_WHITE	5
 #define cd_ID		7
 
-#define DEBUG_EN
+// #define DEBUG_EN		/// Uncomment to print add info
 
 struct AW_stru_t	{
 	uint32_t als1;

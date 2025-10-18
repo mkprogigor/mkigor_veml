@@ -184,8 +184,8 @@ AW_stru_t cl_VEML7700::readAW() {
 			k, lv_ALSdata, lv_WHITEda, lv_gainIndex, lv_timeIndex);
 #endif
 ///		increase or decrease gain or time index to keep raw data ALS in boindes 1000 .. 10000
-		if ((lv_ALSdata >= 1000) && (lv_ALSdata <= 10000)) break;	///	raw ALS data is OK, go out of loop for
-		if (lv_ALSdata < 1000) {
+		if ((lv_ALSdata >= 500) && (lv_ALSdata <= 10000)) break;	///	raw ALS data is OK, go out of loop for
+		if (lv_ALSdata < 500) {
 			if (lv_timeIndex < 2) lv_timeIndex = 2;
 			else if (lv_gainIndex < (lvc_nGain - 1)) lv_gainIndex++;
 			else if (lv_timeIndex < (lvc_nTime - 1)) lv_timeIndex++;
