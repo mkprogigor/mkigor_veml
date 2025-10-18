@@ -10,4 +10,4 @@
 I correct a little bit std algoritm from datasheet of Vishay company. From my expirience, should take one or couple times more measuremant. Results will be more stable.<br>
 
 
-<img src="images/veml7700.png" alt="pcb" style="width:70%; height:auto;"><BR>
+<img src="images/veml7700.png" alt="pcb" style="width:50%; height:auto;" class="center"><BR>
