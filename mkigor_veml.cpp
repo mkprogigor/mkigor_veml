@@ -1,30 +1,31 @@
 /**
-*	@brief		Arduino Library for sensor light VEML7700.
-*	@author		Igor Mkprog, mkprogigor@gmail.com
-*	@version	V1.0	@date	16.10.2025
-*	@details	of using. 1st - wake up sendor from shut down, metod cl_VEML7700.wakeUp(),
-*			wait for > 800 ms and receive light ALS and WHITE by metod readAW().
-*			Method do not has fix time executing, because it find and select proper coefficient
-*			for gain & time counting. It can takes time form 500 to 3000ms.
-*			I correct a little bit std algoritm from datasheet of Vishay company.
-*			From my expirience, should take one or couple times more measuremant. Results will be more stable.
-*
-*	@remarks	Glossary, abbreviations used in the module. Name has small or capital letters ("camelCase"),
-*	and consist only 2 or 1 symbol '_', that divede it in => prefix + name + suffix.
-*	prefix: 
-*		gv_*	- Global Variable;
-*		lv_*	- Local Variable (live inside statement);
-*		cl_*	- CLass;
-*		cd_*	- Class Definition;
-*		cgv_*	- Class public (Global) member (Variable);
-*		clv_*	- Class private (Local) member (Variable);
-*		cgf_*	- Class public (Global) metod (Function), not need, no usefull, becouse we see parenthesis => ();
-*		clf_*	- Class private (Local) metod (Function);
-*		lp_*	- in function, local parameter.
-*	suffix:
-*		*_stru	- [like *_t] as usual, point to the type.
-	example:	- prefix_nameOfFuncOrVar_suffix, gv_tphg_stru => global var (tphg) structure.
-*/
+ * @brief	Arduino Library for sensor light VEML7700.
+ * @author	Igor Mkprog, mkprogigor@gmail.com
+ * @version	V1.1	@date	22.10.2025
+ * @details	of using. 1st - wake up sendor from shut down, metod cl_VEML7700.wakeUp(),
+ * 			wait for > 800 ms and receive light ALS and WHITE by metod readAW().
+ * 			Method do not has fix time executing, because it find and select proper coefficient
+ * 			for gain & time counting. It can takes time form 500 to 3000ms.
+ * 			I correct a little bit std algoritm from datasheet of Vishay company.
+ * 			From my expirience, should take one or couple times more measuremant. 
+ * 			Results will be more stable.
+ * @example	https://github.com/mkprogigor/mkigor_esp32c3_ws
+ * 
+ * @remarks	Glossary, abbreviations used in the module. Name has small or capital letters ("camelCase"),
+ * 	and consist only 2 or 1 symbol '_', that divede it in => prefix + name + suffix.
+ * 	prefix: 
+ * 		gv_*	- Global Variable;
+ * 		lv_*	- Local Variable (live inside statement);
+ * 		cl_*	- CLass;
+ * 		cd_*	- Class Definition;
+ * 		cgv_*	- Class public (Global) member (Variable);
+ * 		clv_*	- Class private (Local) member (Variable);
+ * 		clf_*	- Class private (Local) metod (Function);
+ * 		lp_*	- in function, local parameter.
+ * 	suffix:
+ * 		*_stru	- [like *_t] as usual, point to the type.
+ * 	example:	- prefix_nameOfFuncOrVar_suffix, gv_tphg_stru => global var (tphg) structure.
+ */
 
 #include <mkigor_veml.h>
 
@@ -146,49 +147,65 @@ void cl_VEML7700::wakeUp() {
 }
 
 /**
+ * @brief write (set) to command data 1 value of gain & time
+ * 
+ * @param lp_idxGain index of gain (0 - 3), lp_idxTime index of time (0 - 5)
+ */
+void cl_VEML7700::writeGainTime(uint8_t lp_idxGain, uint8_t lp_idxTime) {
+	uint16_t lv_ALSconf = readReg(cd_ALS_CONF);
+	lv_ALSconf = lv_ALSconf & 0xE43F;	///	0b 1110 0100 0011 1111 - zero mask for gain & time
+	lv_ALSconf = lv_ALSconf | ((uint16_t)clv_ALSgain[lp_idxGain])<<11 | ((uint16_t)clv_ALStime[lp_idxTime])<<6;
+	writeReg(cd_ALS_CONF, lv_ALSconf);
+}
+
+/**
+ * @brief read value of gain & time, read 16 bit raw data ALS, WHITE
+ * 
+ * @return GTrawAW_stru_t = {uint8_t GT, uint16_t ALS, uint16_t WHITE}
+ */
+GTidx_stru_t cl_VEML7700::readGainTime() {
+	uint8_t lv_gainIndex = 0;
+	uint8_t lv_timeIndex = 0;
+	uint16_t lv_ALSconf = readReg(cd_ALS_CONF);
+	uint8_t lv_gain = (lv_ALSconf >> 11) & 0x03;
+	uint8_t lv_time = (lv_ALSconf >> 6) & 0x0F;
+	///	find index
+	for (uint8_t i = 0; i < clv_nGain; i++) if (lv_gain == clv_ALSgain[i]) lv_gainIndex = i;
+	for (uint8_t i = 0; i < clv_nTime; i++) if (lv_time == clv_ALStime[i]) lv_timeIndex = i;
+	return {lv_gainIndex, lv_timeIndex};
+}
+
+/**
  * @brief read raw data from sensor and calc it to LUX value
  * @details	ALS and WHITE raw data need to be actual, after call fn wakeUp(),
  * 			should to do delay > 800 ms,
  * @return structure AW_stru_t { (uint32_t)Lux ALS, (uint32_t)Lux WHITE } = ALS & WHATI values in lux 
  */
 AW_stru_t cl_VEML7700::readAW() {
-	/// Constant vars
-	const uint8_t	lvc_nGain = 4;
-	const uint8_t	lvc_nTime = 6;
-	const uint8_t	lvc_ALSgain[lvc_nGain] = { 2, 3, 0, 1};	///	1/8, 1/4, 1. 2
-	const uint8_t	lvc_ALStime[lvc_nTime] = { 0x0C, 0x08, 0, 0x01, 0x02, 0x03};
-	const uint16_t	lvc_ALSdelay[lvc_nTime] = { 25, 50, 100,  200,  400,  800};
-	const float 	lvc_tableResol[lvc_nGain] [lvc_nTime] = {
-			{2.1504, 1.0752, 0.5376, 0.2688, 0.1344, 0.0672},
-			{1.0752, 0.5376, 0.2688, 0.1344, 0.0672, 0.0336},
-			{0.2688, 0.1344, 0.0672, 0.0336, 0.0168, 0.0084},
-			{0.1344, 0.0672, 0.0336, 0.0168, 0.0084, 0.0042} };
-	/// Calculate vars
-	uint8_t lv_gainIndex = 0;
-	uint8_t lv_timeIndex = 0;
 	AW_stru_t lv_AW =  { 0, 0 };
-	uint16_t lv_ALSdata = readReg(cd_ALS);
-	uint16_t lv_WHITEda = readReg(cd_WHITE);
-/// It is possible 24 times, find gain & time value
-	for (uint8_t k = 0; k < 24; k++) {
-		lv_ALSdata = readReg(cd_ALS);
-		lv_WHITEda = readReg(cd_WHITE);
-		uint16_t lv_ALSconf = readReg(cd_ALS_CONF);
-		uint8_t lv_gain = (lv_ALSconf >> 11) & 0x03;
-		uint8_t lv_time = (lv_ALSconf >> 6) & 0x0F;
-		///	find index
-		for (uint8_t i = 0; i < lvc_nGain; i++) if (lv_gain == lvc_ALSgain[i]) lv_gainIndex = i;
-		for (uint8_t i = 0; i < lvc_nTime; i++) if (lv_time == lvc_ALStime[i]) lv_timeIndex = i;
+	GTidx_stru_t lv_gtIdx =  { 0, 0};
+	uint8_t lv_gainIndex, lv_timeIndex;
+	uint16_t lv_ALSdata, lv_WHITEda;
+
+	for (uint8_t k = 0; k < 24; k++) {	/// It is possible 24 times, find gain & time value
+
+		lv_gtIdx = readGainTime();
+		lv_gainIndex = lv_gtIdx.idxGain1;
+		lv_timeIndex = lv_gtIdx.idxTime1;
+		lv_ALSdata = readReg(cd_ALS_CONF);
+		lv_WHITEda = readReg(cd_ALS_CONF);
+
 #ifdef DEBUG_EN
 		printf("Attempt to measure #%d -> ALS=%d, WHITE=%d, gainIdx=%d, timeIdx=%d\n",
 			k, lv_ALSdata, lv_WHITEda, lv_gainIndex, lv_timeIndex);
 #endif
+
 ///		increase or decrease gain or time index to keep raw data ALS in boindes 1000 .. 10000
 		if ((lv_ALSdata >= 500) && (lv_ALSdata <= 10000)) break;	///	raw ALS data is OK, go out of loop for
 		if (lv_ALSdata < 500) {
 			if (lv_timeIndex < 2) lv_timeIndex = 2;
-			else if (lv_gainIndex < (lvc_nGain - 1)) lv_gainIndex++;
-			else if (lv_timeIndex < (lvc_nTime - 1)) lv_timeIndex++;
+			else if (lv_gainIndex < (clv_nGain - 1)) lv_gainIndex++;
+			else if (lv_timeIndex < (clv_nTime - 1)) lv_timeIndex++;
 		}
 		else if (lv_ALSdata > 10000) {
 			if (lv_timeIndex > 2)	lv_timeIndex--;
@@ -197,21 +214,19 @@ AW_stru_t cl_VEML7700::readAW() {
 		}
 
 		sleep();		/// Shut down to change config Gain & Time
-		lv_ALSconf = lv_ALSconf & 0xE43F;	///	0b 1110 0100 0011 1111 - zero mask for gain & time
-		lv_ALSconf = lv_ALSconf | ((uint16_t)lvc_ALSgain[lv_gainIndex])<<11 | ((uint16_t)lvc_ALStime[lv_timeIndex])<<6;
-		writeReg(cd_ALS_CONF, lv_ALSconf);
+		writeGainTime(lv_gainIndex, lv_timeIndex);
 		wakeUp();
-		delay(lvc_ALSdelay[lv_timeIndex] + 100);	///	Delay for sensor can update count with new Gain & Time
+		delay(clv_ALSdelay[lv_timeIndex] + 100);	///	Delay for sensor can update count with new Gain & Time
 		// delay(850);	// if something not good work
 
 		///	if reach max or min sensivity of sensor => go out of loop for, no more :-)
-		if ( ( lv_gainIndex == (lvc_nGain-1) ) && ( lv_timeIndex == (lvc_nTime-1) ) )	break;
+		if ( ( lv_gainIndex == (clv_nGain-1) ) && ( lv_timeIndex == (clv_nTime-1) ) )	break;
 		if ( (lv_gainIndex == 0) && (lv_timeIndex == 0) )	break;
 	}
 
 	lv_ALSdata = readReg(cd_ALS);
 	lv_WHITEda = readReg(cd_WHITE);
-	float lv_coef = lvc_tableResol[lv_gainIndex][lv_timeIndex];
+	float lv_coef = clv_tableResol[lv_gainIndex][lv_timeIndex];
 	lv_AW.als1 = (uint32_t)( round(lv_coef * (float)lv_ALSdata) );
 	lv_AW.whi1 = (uint32_t)( round(lv_coef * (float)lv_WHITEda) );
 #ifdef DEBUG_EN
