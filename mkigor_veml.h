@@ -109,16 +109,17 @@ void sleep();
 void wakeUp();
 
 /**
- * @brief write (set) to command data 1 value of gain & time
+ * @brief Write (set) to command data value of gain & time
  * 
- * @param lp_idxGain index of gain (0 - 3), lp_idxTime index of time (0 - 5)
+ * @param lp_idxGain index value of gain (0=1/8, 1=1/4, 2=1, 3=2),
+ * @param lp_idxTime index value of time, ms (0=25, 1=50, 2=100, 3=200, 4=400, 5=800)
  */
 void writeGainTime(uint8_t lp_idxGain, uint8_t lp_idxTime);
 
 /**
- * @brief read value of gain & time, read 16 bit raw data ALS, WHITE
+ * @brief Read index value of gain & time VEML7700.
  * 
- * @return GTrawAW_stru_t = {uint8_t GT, uint16_t ALS, uint16_t WHITE}
+ * @return GTidx_stru_t = {uint8_t lv_idxGain, uint8_t lv_idxTime}
  */
 GTidx_stru_t readGainTime();
 

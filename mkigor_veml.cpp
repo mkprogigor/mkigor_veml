@@ -147,9 +147,10 @@ void cl_VEML7700::wakeUp() {
 }
 
 /**
- * @brief write (set) to command data 1 value of gain & time
+ * @brief Write (set) to command data value of gain & time
  * 
- * @param lp_idxGain index of gain (0 - 3), lp_idxTime index of time (0 - 5)
+ * @param lp_idxGain index value of gain (0=1/8, 1=1/4, 2=1, 3=2),
+ * @param lp_idxTime index value of time, ms (0=25, 1=50, 2=100, 3=200, 4=400, 5=800)
  */
 void cl_VEML7700::writeGainTime(uint8_t lp_idxGain, uint8_t lp_idxTime) {
 	uint16_t lv_ALSconf = readReg(cd_ALS_CONF);
@@ -159,20 +160,21 @@ void cl_VEML7700::writeGainTime(uint8_t lp_idxGain, uint8_t lp_idxTime) {
 }
 
 /**
- * @brief read value of gain & time, read 16 bit raw data ALS, WHITE
+ * @brief Read index value of gain & time VEML7700.
  * 
- * @return GTrawAW_stru_t = {uint8_t GT, uint16_t ALS, uint16_t WHITE}
+ * @return GTidx_stru_t = {uint8_t lv_idxGain, uint8_t lv_idxTime}
+ * 		lv_idxGain (0=1/8, 1=1/4, 2=1, 3=2)
+ * 		lv_idxTime (0=25, 1=50, 2=100, 3=200, 4=400, 5=800) ms
  */
 GTidx_stru_t cl_VEML7700::readGainTime() {
-	uint8_t lv_gainIndex = 0;
-	uint8_t lv_timeIndex = 0;
+	uint8_t lv_idxGain = 0xff, lv_idxTime = 0xff;
 	uint16_t lv_ALSconf = readReg(cd_ALS_CONF);
 	uint8_t lv_gain = (lv_ALSconf >> 11) & 0x03;
 	uint8_t lv_time = (lv_ALSconf >> 6) & 0x0F;
 	///	find index
-	for (uint8_t i = 0; i < clv_nGain; i++) if (lv_gain == clv_ALSgain[i]) lv_gainIndex = i;
-	for (uint8_t i = 0; i < clv_nTime; i++) if (lv_time == clv_ALStime[i]) lv_timeIndex = i;
-	return {lv_gainIndex, lv_timeIndex};
+	for (uint8_t i = 0; i < clv_nGain; i++) if (lv_gain == clv_ALSgain[i]) lv_idxGain = i;
+	for (uint8_t i = 0; i < clv_nTime; i++) if (lv_time == clv_ALStime[i]) lv_idxTime = i;
+	return {lv_idxGain, lv_idxTime};
 }
 
 /**
